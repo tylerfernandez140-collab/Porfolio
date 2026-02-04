@@ -2,6 +2,8 @@ import ProfileHeader from "@/components/ProfileHeader";
 import AboutSection from "@/components/AboutSection";
 import TechStackSection from "@/components/TechStackSection";
 import ExperienceSection from "@/components/ExperienceSection";
+import BeyondCodingSection from "@/components/BeyondCodingSection";
+import ProjectsSection from "@/components/ProjectsSection";
 import profilePhoto from "@/assets/profile-photo.jpg";
 
 const Index = () => {
@@ -9,28 +11,32 @@ const Index = () => {
     profile: {
       name: "Your Name",
       location: "Your City, Country",
-      roles: ["Software Engineer", "Full-Stack Developer", "Creator"],
+      roles: ["AI", "Software Engineer", "Content Creator"],
       avatarUrl: profilePhoto,
       email: "hello@example.com",
       calendlyUrl: "https://calendly.com/your-username",
       blogUrl: "https://blog.example.com",
+      achievement: {
+        text: "Featured Achievement 2025",
+        link: "#",
+      },
     },
     about: {
       paragraphs: [
-        "I'm a full-stack software engineer specializing in developing solutions with JavaScript, TypeScript, and React. I work on projects including building modern web applications, mobile apps, and creating seamless user experiences.",
-        "I've helped startups and businesses grow and streamline their processes through software solutions. I enjoy building products that make a real difference in people's lives.",
-        "I'm passionate about clean code, performance optimization, and staying up-to-date with the latest technologies. Currently exploring AI integration and building intelligent applications.",
+        "I'm a full-stack software engineer specializing in developing solutions with JavaScript, Python, and PHP. I work on projects including building modern web applications, mobile apps, search engine optimization, digital marketing, and making code tutorials.",
+        "I've helped startups and MSMEs grow and streamline their processes through software solutions. I've also built a community of over 200,000 developers sharing knowledge and mentorship.",
+        "Lately, I've been diving deeper into the world of artificial intelligence, focusing on integrating AI tools and techniques into modern applications. My work now includes developing AI-powered solutions, creating intelligent applications, and leveraging generative AI to optimize development workflows and deliver cutting-edge technology.",
       ],
     },
     techStack: {
       categories: [
         {
           name: "Frontend",
-          items: ["React", "TypeScript", "Next.js", "Tailwind CSS", "Vue.js"],
+          items: ["JavaScript", "TypeScript", "React", "Next.js", "Vue.js", "Tailwind CSS"],
         },
         {
           name: "Backend",
-          items: ["Node.js", "Python", "PostgreSQL", "MongoDB", "GraphQL"],
+          items: ["Node.js", "Python", "PHP", "Laravel", "PostgreSQL", "MongoDB"],
         },
         {
           name: "DevOps & Cloud",
@@ -40,35 +46,75 @@ const Index = () => {
     },
     experience: [
       {
-        title: "Senior Software Engineer",
-        company: "Tech Company",
-        year: "2024",
+        title: "Principal AI Engineer",
+        company: "Standard Chartered",
+        year: "2025",
         isCurrent: true,
       },
       {
-        title: "Full-Stack Developer",
-        company: "Startup Inc",
-        year: "2023",
+        title: "AI Ops Engineer",
+        company: "Centre of Excellence for GenAI, Cambridge",
+        year: "2025",
       },
       {
-        title: "Software Developer",
-        company: "Digital Agency",
+        title: "Senior Full-Stack Developer",
+        company: "Core Technology, Cambridge",
+        year: "2024",
+      },
+      {
+        title: "Software Engineering Lead",
+        company: "PocketDevs",
         year: "2022",
       },
       {
-        title: "Junior Developer",
-        company: "Web Solutions",
+        title: "Lead Application Developer",
+        company: "Bluewind Asia",
         year: "2021",
       },
       {
-        title: "Computer Science Degree",
-        company: "University",
+        title: "Software Engineer",
+        company: "GCM",
         year: "2020",
+      },
+      {
+        title: "BS Information Technology",
+        company: "University of San Carlos",
+        year: "2019",
       },
       {
         title: "Hello World! 👋",
         company: "Wrote my first line of code",
         year: "2015",
+      },
+    ],
+    beyondCoding: [
+      "When not writing code, I focus on learning about emerging technologies, minimalism, and startup culture.",
+      "I share my knowledge through content creation and community building.",
+    ],
+    projects: [
+      {
+        name: "CodeCred",
+        description: "Online certifications for programmers",
+        url: "https://codecred.dev",
+        urlDisplay: "codecred.dev",
+      },
+      {
+        name: "BASE404",
+        description: "Online coding bootcamp",
+        url: "https://base-404.com",
+        urlDisplay: "base-404.com",
+      },
+      {
+        name: "DIIN.PH",
+        description: "AI-powered wardrobe assistant",
+        url: "https://diin.ph",
+        urlDisplay: "diin.ph",
+      },
+      {
+        name: "DYNAMIS Workout Tracker",
+        description: "AI-powered workout tracker",
+        url: "https://dynamis.app",
+        urlDisplay: "dynamis.app",
       },
     ],
   };
@@ -85,17 +131,34 @@ const Index = () => {
           email={portfolioData.profile.email}
           calendlyUrl={portfolioData.profile.calendlyUrl}
           blogUrl={portfolioData.profile.blogUrl}
+          achievement={portfolioData.profile.achievement}
         />
 
-        {/* About Section - Full Width */}
-        <section className="mt-10">
-          <AboutSection paragraphs={portfolioData.about.paragraphs} />
+        {/* Main Two-Column Layout */}
+        <section className="mt-10 grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Left Column - About & Tech Stack */}
+          <div className="lg:col-span-3 space-y-6">
+            <AboutSection paragraphs={portfolioData.about.paragraphs} />
+            <TechStackSection categories={portfolioData.techStack.categories} />
+          </div>
+
+          {/* Right Column - Experience */}
+          <div className="lg:col-span-2">
+            <ExperienceSection experiences={portfolioData.experience} />
+          </div>
         </section>
 
-        {/* Two Column Layout: Tech Stack | Experience */}
-        <section className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TechStackSection categories={portfolioData.techStack.categories} />
-          <ExperienceSection experiences={portfolioData.experience} />
+        {/* Bottom Section - Beyond Coding & Projects */}
+        <section className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Beyond Coding */}
+          <div className="lg:col-span-2">
+            <BeyondCodingSection paragraphs={portfolioData.beyondCoding} />
+          </div>
+
+          {/* Recent Projects */}
+          <div className="lg:col-span-3">
+            <ProjectsSection projects={portfolioData.projects} />
+          </div>
         </section>
 
         {/* Footer */}
