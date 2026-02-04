@@ -6,10 +6,6 @@ interface ProfileHeaderProps {
   location: string;
   roles: string[];
   avatarUrl: string;
-  achievement?: {
-    text: string;
-    link: string;
-  };
   email: string;
   calendlyUrl?: string;
   blogUrl?: string;
@@ -20,7 +16,6 @@ const ProfileHeader = ({
   location,
   roles,
   avatarUrl,
-  achievement,
   email,
   calendlyUrl,
   blogUrl,
@@ -79,18 +74,6 @@ const ProfileHeader = ({
             </Button>
           )}
         </div>
-
-        {achievement && (
-          <a
-            href={achievement.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 mt-4 px-3 py-1.5 bg-accent/10 text-accent text-sm font-medium rounded-full hover:bg-accent/20 transition-colors"
-          >
-            <span>🏆</span>
-            {achievement.text}
-          </a>
-        )}
       </div>
     </header>
   );

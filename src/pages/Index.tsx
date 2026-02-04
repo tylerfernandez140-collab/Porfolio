@@ -2,12 +2,9 @@ import ProfileHeader from "@/components/ProfileHeader";
 import AboutSection from "@/components/AboutSection";
 import TechStackSection from "@/components/TechStackSection";
 import ExperienceSection from "@/components/ExperienceSection";
-import ProjectsSection from "@/components/ProjectsSection";
-import BeyondCodingSection from "@/components/BeyondCodingSection";
 import profilePhoto from "@/assets/profile-photo.jpg";
 
 const Index = () => {
-  // Portfolio data - customize this with your own information
   const portfolioData = {
     profile: {
       name: "Your Name",
@@ -17,10 +14,6 @@ const Index = () => {
       email: "hello@example.com",
       calendlyUrl: "https://calendly.com/your-username",
       blogUrl: "https://blog.example.com",
-      achievement: {
-        text: "Featured Achievement 2024",
-        link: "#",
-      },
     },
     about: {
       paragraphs: [
@@ -41,7 +34,7 @@ const Index = () => {
         },
         {
           name: "DevOps & Cloud",
-          items: ["AWS", "Docker", "Kubernetes", "GitHub Actions", "Vercel"],
+          items: ["AWS", "Docker", "Kubernetes", "GitHub Actions"],
         },
       ],
     },
@@ -72,36 +65,11 @@ const Index = () => {
         company: "University",
         year: "2020",
       },
-    ],
-    projects: [
       {
-        name: "Project Alpha",
-        description: "A modern web application for task management",
-        url: "https://example.com",
-        urlDisplay: "project-alpha.com",
+        title: "Hello World! 👋",
+        company: "Wrote my first line of code",
+        year: "2015",
       },
-      {
-        name: "Project Beta",
-        description: "E-commerce platform with AI recommendations",
-        url: "https://example.com",
-        urlDisplay: "project-beta.com",
-      },
-      {
-        name: "Project Gamma",
-        description: "Real-time collaboration tool",
-        url: "https://example.com",
-        urlDisplay: "project-gamma.com",
-      },
-      {
-        name: "Project Delta",
-        description: "Mobile-first fitness tracking app",
-        url: "https://example.com",
-        urlDisplay: "project-delta.com",
-      },
-    ],
-    beyondCoding: [
-      "When not writing code, I focus on learning about emerging technologies, design principles, and startup culture.",
-      "I share my knowledge through content creation, open-source contributions, and community building.",
     ],
   };
 
@@ -117,27 +85,17 @@ const Index = () => {
           email={portfolioData.profile.email}
           calendlyUrl={portfolioData.profile.calendlyUrl}
           blogUrl={portfolioData.profile.blogUrl}
-          achievement={portfolioData.profile.achievement}
         />
 
-        {/* About Section */}
+        {/* About Section - Full Width */}
         <section className="mt-10">
           <AboutSection paragraphs={portfolioData.about.paragraphs} />
         </section>
 
-        {/* Main Grid Layout */}
-        <section className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Tech Stack & Beyond Coding */}
-          <div className="space-y-6">
-            <TechStackSection categories={portfolioData.techStack.categories} />
-            <BeyondCodingSection paragraphs={portfolioData.beyondCoding} />
-          </div>
-
-          {/* Right Column - Experience & Projects */}
-          <div className="lg:col-span-2 space-y-6">
-            <ExperienceSection experiences={portfolioData.experience} />
-            <ProjectsSection projects={portfolioData.projects} />
-          </div>
+        {/* Two Column Layout: Tech Stack | Experience */}
+        <section className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TechStackSection categories={portfolioData.techStack.categories} />
+          <ExperienceSection experiences={portfolioData.experience} />
         </section>
 
         {/* Footer */}
