@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
+    --background: 0 0% 100%;
     --foreground: 0 0% 9%;
 
     --card: 0 0% 100%;
@@ -30,8 +30,8 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    --border: 0 0% 92%;
+    --input: 0 0% 92%;
     --ring: 0 0% 9%;
 
     --radius: 0.75rem;
@@ -103,19 +103,19 @@
 
 @layer components {
   .section-title {
-    @apply text-lg font-semibold flex items-center gap-2 mb-4;
+    @apply text-base font-semibold flex items-center gap-2 mb-4;
   }
 
   .tech-badge {
-    @apply px-3 py-1.5 bg-secondary text-secondary-foreground text-sm rounded-lg font-medium;
+    @apply px-3 py-1.5 bg-secondary text-secondary-foreground text-sm rounded-md font-medium hover:bg-secondary/80 transition-colors cursor-default;
   }
 
   .timeline-dot {
-    @apply w-2.5 h-2.5 rounded-full bg-foreground shrink-0;
+    @apply w-2 h-2 rounded-full bg-foreground shrink-0;
   }
 
   .timeline-dot-muted {
-    @apply w-2.5 h-2.5 rounded-full border-2 border-muted-foreground shrink-0;
+    @apply w-2 h-2 rounded-full border-[1.5px] border-muted-foreground/50 shrink-0;
   }
 
   .card-hover {
