@@ -1,16 +1,18 @@
 import { db } from "./firebase";
 import { 
-  collection, 
-  addDoc, 
-  query, 
-  orderBy, 
-  onSnapshot, 
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
   serverTimestamp,
   doc,
   getDoc,
   setDoc,
   updateDoc,
-  where
+  where,
+  writeBatch,
+  getDocs
 } from "firebase/firestore";
 
 export interface ChatMessage {
@@ -24,6 +26,7 @@ export interface ChatMessage {
   sender_name?: string; // New field for sender's display name
   sender_type?: "human" | "ai"; // New field: "human" or "ai"
   source?: "telegram" | "web" | "ai"; // New field: "telegram", "web", or "ai"
+  isWelcomeMessage?: boolean; // New field to identify welcome messages
 }
 
 export interface ChatSession {
@@ -54,7 +57,8 @@ export const saveMessage = async (
   sender_type: "human" | "ai", // New parameter
   source: "telegram" | "web" | "ai", // New parameter
   telegramChatId?: string, 
-  telegramMessageId?: number
+  telegramMessageId?: number,
+  isWelcomeMessage?: boolean // New parameter
 ): Promise<void> => {
   try {
     const sessionId = getSessionId();
@@ -76,6 +80,9 @@ export const saveMessage = async (
     }
     if (telegramMessageId) {
       messageData.telegramMessageId = telegramMessageId;
+    }
+    if (isWelcomeMessage) { // Store new field if true
+      messageData.isWelcomeMessage = isWelcomeMessage;
     }
     
     await addDoc(messagesRef, messageData);
@@ -192,6 +199,25 @@ export const saveNickname = async (sessionId: string, nickname: string): Promise
     const sessionRef = doc(db, "chatSessions", sessionId);
     await updateDoc(sessionRef, { nickname });
     console.log(`Nickname "${nickname}" saved for session ${sessionId}`);
+
+    // Retroactively update sender_name for previous messages in this session
+    const messagesRef = collection(db, "chatMessages");
+    const q = query(
+      messagesRef,
+      where("sessionId", "==", sessionId),
+      where("sender", "==", "user"),
+      where("sender_name", "==", "You") // Target messages sent as "You"
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const batch = writeBatch(db);
+      querySnapshot.forEach((messageDoc) => {
+        batch.update(messageDoc.ref, { sender_name: nickname });
+      });
+      await batch.commit();
+      console.log(`Updated sender_name for ${querySnapshot.size} messages in session ${sessionId}`);
+    }
   } catch (error) {
     console.error("Error saving nickname:", error);
   }

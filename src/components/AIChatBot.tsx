@@ -17,6 +17,7 @@ interface Message {
   sender_name?: string;
   sender_type?: "human" | "ai";
   source?: "telegram" | "web" | "ai";
+  isWelcomeMessage?: boolean; // Added this line
 }
 
 const AIChatBot = () => {
@@ -66,33 +67,32 @@ const AIChatBot = () => {
       }
 
       const ensureWelcomeMessage = async () => {
-    const currentSessionId = getSessionId();
-    if (!currentSessionId) {
-      return;
-    }
+      const currentSessionId = getSessionId();
+      if (!currentSessionId) {
+        return;
+      }
 
-    const messagesRef = collection(db, "chatSessions", currentSessionId, "chatMessages");
-    const q = query(
-      messagesRef,
-      where("sender", "==", "bot"),
-      where("sender_type", "==", "ai"),
-      where("source", "==", "ai"),
-      where("text", "==", "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?")
-    );
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      const welcomeMessage: Message = {
-        id: Date.now().toString(),
-        text: "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?",
-        sender: "bot",
-        timestamp: new Date(),
-        sender_name: "",
-        sender_type: "ai",
-        source: "ai",
-      };
-      await saveMessage(welcomeMessage.text, "bot", "", "ai", "ai");
-    }
-  };
+      const messagesRef = collection(db, "chatMessages"); // Query top-level chatMessages collection
+      const q = query(
+        messagesRef,
+        where("sessionId", "==", currentSessionId), // Filter by current session ID
+        where("isWelcomeMessage", "==", true) // Filter by the new flag
+      );
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) {
+        const welcomeMessage: Message = {
+          id: Date.now().toString(),
+          text: "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?",
+          sender: "bot",
+          timestamp: new Date(),
+          sender_name: "",
+          sender_type: "ai",
+          source: "ai",
+          isWelcomeMessage: true, // Mark as welcome message
+        };
+        await saveMessage(welcomeMessage.text, "bot", "", "ai", "ai", undefined, undefined, true); // Pass true for isWelcomeMessage
+      }
+    };
 
       ensureWelcomeMessage();
 
@@ -220,12 +220,17 @@ const AIChatBot = () => {
   const handleSendMessage = async () => {
     if (inputValue.trim() === "") return;
 
+    if (!nickname) {
+      setShowNicknameInput(true);
+      return;
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputValue,
       sender: "user",
       timestamp: new Date(),
-      sender_name: "You", // Always display "You" for user messages
+      sender_name: nickname, // Use the actual nickname for local display
       sender_type: "human",
       source: "web",
     };
@@ -235,9 +240,8 @@ const AIChatBot = () => {
     setIsTyping(true);
 
     // Save user message to Firebase, ensuring sender_name is the nickname
-    const senderName = nickname || "You"; // Use nickname if available, otherwise "You"
-    const telegramMessageId = await telegramService.sendToTelegram(inputValue, senderName);
-    await saveMessage(inputValue, "user", senderName, "human", "web", telegramService.chatId, telegramMessageId);
+    const telegramMessageId = await telegramService.sendToTelegram(inputValue, nickname);
+    await saveMessage(inputValue, "user", nickname, "human", "web", telegramService.chatId, telegramMessageId);
 
     if (isAITakingOver) {
       try {
