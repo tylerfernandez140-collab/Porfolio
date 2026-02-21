@@ -25,7 +25,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       const telegramMessageId = message.message_id;
       const timestamp = new Date(message.date * 1000);
 
-      let sessionId = 'default_session';
+      let sessionId: string | undefined; // Declare sessionId as possibly undefined
       const chatSessionsRef = db.collection('chatSessions');
       const chatMessagesRef = db.collection('chatMessages'); // New: Reference to chatMessages
 
@@ -42,23 +42,28 @@ export default async function (req: VercelRequest, res: VercelResponse) {
           sessionId = repliedToMessageSnapshot.docs[0].data().sessionId;
           console.log(`Found session ${sessionId} for replied-to Telegram message ID ${repliedToMessageId}`);
         } else {
-          console.warn(`No session found for replied-to Telegram message ID ${repliedToMessageId}. Falling back to existing session linking logic.`);
+          console.warn(`No session found for replied-to Telegram message ID ${repliedToMessageId}. Proceeding with new session linking logic.`);
         }
       }
 
-      // If sessionId is still default_session, or if it wasn't a reply, proceed with existing linking logic
-      if (sessionId === 'default_session' && telegramChatIdFromMessage) {
-        let existingSessionSnapshot;
+      // If sessionId is still not set (meaning it wasn't a reply to an existing message),
+      // try to find an existing session linked by telegramChatId
+      if (!sessionId && telegramChatIdFromMessage) {
         const q = chatSessionsRef.where('telegramChatId', '==', String(telegramChatIdFromMessage)).limit(1);
         console.log(`Firestore query for telegramChatId: ${telegramChatIdFromMessage}`);
-        existingSessionSnapshot = await q.get(); // Execute query and assign to existingSessionSnapshot
-      } else {
-        console.warn('No telegramChatId found in message. Proceeding to link unlinked sessions or use default.');
+        const existingSessionSnapshot = await q.get();
+
+        if (!existingSessionSnapshot.empty) {
+          sessionId = existingSessionSnapshot.docs[0].id;
+          console.log(`Found existing session ${sessionId} for Telegram chat ID ${telegramChatIdFromMessage}`);
+        } else {
+          console.warn(`No existing session found for Telegram chat ID ${telegramChatIdFromMessage}. Proceeding to link unlinked sessions or create new.`);
+        }
       }
 
-      if (sessionId === 'default_session') {
-        // If no existing session found, try to link to the most recent unlinked web chat session
-        console.warn(`No existing session found for Telegram chat ID ${telegramChatIdFromMessage}. Attempting to link to an unlinked web session.`);
+      // If sessionId is still not set, try to link to the most recent unlinked web chat session
+      if (!sessionId) {
+        console.warn(`No session found for Telegram chat ID ${telegramChatIdFromMessage}. Attempting to link to an unlinked web session or create a new one.`);
 
         // Query for sessions that do NOT have a telegramChatId, ordered by lastMessageTime
         const unlinkedSessionsQuery = chatSessionsRef
@@ -78,11 +83,26 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         }
 
         if (!foundUnlinkedSession) {
-            console.warn('No unlinked web session found to attach Telegram chat ID. Using default session.');
-            sessionId = 'default_session'; // Fallback if no unlinked session found
+            // If no unlinked session found, create a new session
+            const newSessionRef = chatSessionsRef.doc(); // Let Firestore generate a new ID
+            sessionId = newSessionRef.id;
+            await newSessionRef.set({
+                createdAt: timestamp,
+                lastMessage: telegramMessageText,
+                lastMessageTime: timestamp,
+                messageCount: 1,
+                telegramChatId: String(telegramChatIdFromMessage),
+                nickname: `Telegram User ${telegramChatIdFromMessage}` // Default nickname
+            });
+            console.log(`Created new session ${sessionId} for Telegram chat ID ${telegramChatIdFromMessage}`);
         }
       }
       console.log(`Using sessionId: ${sessionId} for Telegram reply.`);
+
+      if (!sessionId) {
+        console.error('Session ID is undefined after all linking attempts.');
+        return res.status(500).send('Error: Session ID could not be determined.');
+      }
 
       try {
         const chatMessageData: any = {
