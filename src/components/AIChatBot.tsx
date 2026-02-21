@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, Send, X } from "lucide-react";
+import { MessageCircle, Send, X, Bot, User } from "lucide-react";
 import { useTheme } from "next-themes";
 import lightMain from "../assets/light-main.png";
 import darkMain from "../assets/dark-main.png";
@@ -7,12 +7,16 @@ import { saveMessage, getMessages, ChatMessage, saveNickname, getSessionId } fro
 import TelegramService from "../lib/TelegramServiceModule";
 import { db } from "../lib/firebase"; // Import db
 import { collection, query, where, getDocs } from "firebase/firestore"; // Import Firestore functions
+import ChatBadge from "./ChatBadge"; // Import the new ChatBadge component
 
 interface Message {
   id: string;
   text: string;
   sender: "user" | "bot";
   timestamp: any;
+  sender_name?: string;
+  sender_type?: "human" | "ai";
+  source?: "telegram" | "web" | "ai";
 }
 
 const AIChatBot = () => {
@@ -64,7 +68,10 @@ const AIChatBot = () => {
           id: msg.id || '',
           text: msg.text,
           sender: msg.sender,
-          timestamp: msg.timestamp
+          timestamp: msg.timestamp,
+          sender_name: msg.sender_name,
+          sender_type: msg.sender_type,
+          source: msg.source,
         }));
 
         // If no messages, add and save welcome message
@@ -74,10 +81,13 @@ const AIChatBot = () => {
             text: "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?",
             sender: "bot",
             timestamp: new Date(),
+            sender_name: "",
+            sender_type: "ai",
+            source: "ai",
           };
           setMessages([welcomeMessage]);
           // Save welcome message to Firebase
-          saveMessage(welcomeMessage.text, "bot");
+          saveMessage(welcomeMessage.text, "bot", "", "ai", "ai");
         } else {
           setMessages(convertedMessages);
         }
@@ -141,17 +151,18 @@ const AIChatBot = () => {
       text: inputValue,
       sender: "user",
       timestamp: new Date(),
+      sender_name: "You", // Always display "You" for user messages
+      sender_type: "human",
+      source: "web",
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
     setIsTyping(true);
 
-    // Save user message to Firebase, including telegramChatId
-    const currentNickname = localStorage.getItem('chatNickname') || nickname || undefined;
-    console.log('AIChatBot - Sending nickname to Telegram:', currentNickname);
-    const telegramMessageId = await telegramService.sendToTelegram(inputValue, currentNickname);
-    await saveMessage(inputValue, "user", telegramService.chatId, telegramMessageId);
+    // Save user message to Firebase, ensuring sender_name is "You"
+    const telegramMessageId = await telegramService.sendToTelegram(inputValue, "You");
+    await saveMessage(inputValue, "user", "You", "human", "web", telegramService.chatId, telegramMessageId);
 
     try {
       const botResponse = await generateResponse(inputValue);
@@ -160,11 +171,14 @@ const AIChatBot = () => {
         text: botResponse,
         sender: "bot",
         timestamp: new Date(),
+        sender_name: "",
+        sender_type: "ai",
+        source: "ai",
       };
       setMessages(prev => [...prev, botMessage]);
       
       // Save bot response to Firebase
-      await saveMessage(botResponse, "bot", telegramService.chatId);
+      await saveMessage(botResponse, "bot", "", "ai", "ai", telegramService.chatId);
     } catch (error) {
       console.error("Error generating response:", error);
     } finally {
@@ -253,22 +267,34 @@ const AIChatBot = () => {
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 h-[380px] bg-gray-50 dark:bg-gray-800">
                 <div className="space-y-3">
-                    {messages.map((message) => (
+                    {messages.map((message) => {
+                      console.log("Message being rendered:", message);
+                      return (
                       <div
                         key={message.id}
-                        className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                        className={`flex flex-col ${message.sender === "user" ? "items-end" : "items-start"}`}
                       >
+                        <div className="flex items-center mb-1">
+                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                            {message.sender_type === "human" && message.source === "telegram" && <User className="w-5 h-5 mr-1" />}
+                            {message.sender === "bot" && <Bot className="w-5 h-5 mr-1" />}
+                            {message.sender_type === "human" && message.source === "telegram" ? "Ivan" : (message.sender_name || (message.sender === "user" ? "You" : ""))}
+                          </span>
+                          {message.sender_type === "human" && message.source === "telegram" && (
+                            <ChatBadge senderType={message.sender_type} source={message.source} />
+                          )}
+                        </div>
                         <div
-                          className={`max-w-[70%] px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-600 ${
-                            message.sender === "user"
-                              ? "bg-black dark:bg-white text-white dark:text-black rounded-br-sm"
-                              : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-sm"
+                          className={`max-w-[70%] px-4 py-3 rounded-2xl border ${
+                            message.sender_type === "human"
+                              ? "bg-white text-gray-800 dark:bg-green-700 dark:text-white border-gray-300 dark:border-green-600 rounded-br-sm"
+                              : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 rounded-bl-sm"
                           }`}
                         >
                           <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
                         </div>
                       </div>
-                    ))}
+                    );})}
                     {isTyping && (
                       <div className="flex justify-start">
                         <div className="bg-gray-200 dark:bg-gray-700 px-4 py-3 rounded-2xl rounded-bl-sm border border-gray-300 dark:border-gray-600">

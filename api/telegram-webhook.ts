@@ -25,6 +25,11 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       const telegramMessageId = message.message_id;
       const timestamp = new Date(message.date * 1000);
 
+      let telegramUserName = message.from.first_name || message.from.username || `Telegram User ${telegramChatIdFromMessage}`;
+      if (message.from.last_name) {
+        telegramUserName += ` ${message.from.last_name}`;
+      }
+
       let sessionId: string | undefined; // Declare sessionId as possibly undefined
       const chatSessionsRef = db.collection('chatSessions');
       const chatMessagesRef = db.collection('chatMessages'); // New: Reference to chatMessages
@@ -77,7 +82,13 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         if (!unlinkedSnapshot.empty) {
             const doc = unlinkedSnapshot.docs[0];
             sessionId = doc.id;
-            await chatSessionsRef.doc(sessionId).update({ telegramChatId: String(telegramChatIdFromMessage) });
+            await chatSessionsRef.doc(sessionId).update({ 
+              telegramChatId: String(telegramChatIdFromMessage),
+              nickname: telegramUserName, // Update nickname when linking
+              lastSenderName: telegramUserName,
+              lastSenderType: "human",
+              lastSource: "telegram",
+            });
             console.log(`Linked new Telegram chat ID ${telegramChatIdFromMessage} to existing session ${sessionId}`);
             foundUnlinkedSession = true;
         }
@@ -92,7 +103,10 @@ export default async function (req: VercelRequest, res: VercelResponse) {
                 lastMessageTime: timestamp,
                 messageCount: 1,
                 telegramChatId: String(telegramChatIdFromMessage),
-                nickname: `Telegram User ${telegramChatIdFromMessage}` // Default nickname
+                nickname: telegramUserName, // Use actual Telegram user name
+                lastSenderName: telegramUserName,
+                lastSenderType: "human",
+                lastSource: "telegram",
             });
             console.log(`Created new session ${sessionId} for Telegram chat ID ${telegramChatIdFromMessage}`);
         }
@@ -108,15 +122,19 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         const chatMessageData: any = {
           sessionId: sessionId,
           text: telegramMessageText,
-          sender: 'bot',
+          sender: 'user', // Telegram messages are from a user
           timestamp: timestamp,
           telegramMessageId: telegramMessageId,
+          sender_name: telegramUserName,
+          sender_type: "human",
+          source: "telegram",
         };
         if (telegramChatIdFromMessage) {
           chatMessageData.telegramChatId = String(telegramChatIdFromMessage);
         }
         console.log('Saving chat message data to Firebase:', chatMessageData);
 
+        console.log('Saving chat message data to Firebase:', chatMessageData);
         await db.collection('chatMessages').add(chatMessageData);
         console.log('Telegram reply saved to Firebase.');
         res.status(200).send('OK');

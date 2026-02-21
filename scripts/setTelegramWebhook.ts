@@ -1,6 +1,6 @@
 import 'dotenv/config'; // Load environment variables from .env file
 
-import TelegramService from '../src/lib/telegramService.js';
+import TelegramService from '../src/lib/TelegramServiceModule.js';
 
 console.log('Environment variables loaded.');
 

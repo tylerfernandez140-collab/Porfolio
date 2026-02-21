@@ -21,6 +21,9 @@ export interface ChatMessage {
   sessionId: string;
   telegramChatId?: string; // Added for Telegram integration
   telegramMessageId?: number; // Added for Telegram reply mapping
+  sender_name?: string; // New field for sender's display name
+  sender_type?: "human" | "ai"; // New field: "human" or "ai"
+  source?: "telegram" | "web" | "ai"; // New field: "telegram", "web", or "ai"
 }
 
 export interface ChatSession {
@@ -44,7 +47,15 @@ export const getSessionId = (): string => {
 };
 
 // Save message to Firestore
-export const saveMessage = async (text: string, sender: "user" | "bot", telegramChatId?: string, telegramMessageId?: number): Promise<void> => {
+export const saveMessage = async (
+  text: string, 
+  sender: "user" | "bot", 
+  sender_name: string, // New parameter
+  sender_type: "human" | "ai", // New parameter
+  source: "telegram" | "web" | "ai", // New parameter
+  telegramChatId?: string, 
+  telegramMessageId?: number
+): Promise<void> => {
   try {
     const sessionId = getSessionId();
     
@@ -55,6 +66,9 @@ export const saveMessage = async (text: string, sender: "user" | "bot", telegram
       sender,
       sessionId,
       timestamp: serverTimestamp(),
+      sender_name, // Store new field
+      sender_type, // Store new field
+      source, // Store new field
     };
 
     if (telegramChatId) {
@@ -67,14 +81,22 @@ export const saveMessage = async (text: string, sender: "user" | "bot", telegram
     await addDoc(messagesRef, messageData);
 
     // Update session info, passing telegramChatId and telegramMessageId
-    await updateSessionInfo(sessionId, text, telegramChatId, telegramMessageId);
+    await updateSessionInfo(sessionId, text, sender_name, sender_type, source, telegramChatId, telegramMessageId);
   } catch (error) {
     console.error("Error saving message:", error);
   }
 };
 
 // Update session information
-const updateSessionInfo = async (sessionId: string, lastMessage: string, telegramChatId?: string, telegramMessageId?: number): Promise<void> => {
+const updateSessionInfo = async (
+  sessionId: string, 
+  lastMessage: string, 
+  sender_name: string, // New parameter
+  sender_type: "human" | "ai", // New parameter
+  source: "telegram" | "web" | "ai", // New parameter
+  telegramChatId?: string, 
+  telegramMessageId?: number
+): Promise<void> => {
   try {
     const sessionRef = doc(db, "chatSessions", sessionId);
     const sessionDoc = await getDoc(sessionRef);
@@ -83,7 +105,10 @@ const updateSessionInfo = async (sessionId: string, lastMessage: string, telegra
       const updateData: any = {
         lastMessage,
         lastMessageTime: serverTimestamp(),
-        messageCount: (sessionDoc.data()?.messageCount || 0) + 1
+        messageCount: (sessionDoc.data()?.messageCount || 0) + 1,
+        lastSenderName: sender_name, // Store new field
+        lastSenderType: sender_type, // Store new field
+        lastSource: source, // Store new field
       };
       if (telegramChatId) {
         updateData.telegramChatId = telegramChatId;
@@ -98,7 +123,10 @@ const updateSessionInfo = async (sessionId: string, lastMessage: string, telegra
         createdAt: serverTimestamp(),
         lastMessage,
         lastMessageTime: serverTimestamp(),
-        messageCount: 1
+        messageCount: 1,
+        lastSenderName: sender_name, // Store new field
+        lastSenderType: sender_type, // Store new field
+        lastSource: source, // Store new field
       };
       if (telegramChatId) {
         setData.telegramChatId = telegramChatId;
@@ -135,7 +163,10 @@ export const getMessages = (callback: (messages: ChatMessage[]) => void) => {
         timestamp: data.timestamp,
         sessionId: data.sessionId,
         telegramChatId: data.telegramChatId, // Include telegramChatId when fetching
-        telegramMessageId: data.telegramMessageId // Include telegramMessageId when fetching
+        telegramMessageId: data.telegramMessageId, // Include telegramMessageId when fetching
+        sender_name: data.sender_name, // Include new field
+        sender_type: data.sender_type, // Include new field
+        source: data.source, // Include new field
       });
     });
     callback(messages);
