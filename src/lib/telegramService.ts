@@ -17,7 +17,7 @@ class TelegramService {
   }
 
   // Send message to Telegram
-  async sendToTelegram(userMessage: string): Promise<void> {
+  async sendToTelegram(userMessage: string, nickname?: string): Promise<number | undefined> {
     console.log('Telegram Service - Bot Token:', this.botToken ? 'Set' : 'Not set');
     console.log('Telegram Service - Chat ID:', this.chatId ? 'Set' : 'Not set');
     console.log('Telegram Service - Message:', userMessage);
@@ -37,7 +37,7 @@ class TelegramService {
           },
           body: JSON.stringify({
             chat_id: this.chatId,
-            text: `📩 New message from your portfolio chat:\n\n"${userMessage}"\n\nReply to this message to respond directly to the visitor!`,
+            text: `📩 New message from your portfolio chat:\n\n${nickname ? nickname + ': ' : ''}"${userMessage}"\n\nReply to this message to respond directly to the visitor!`,
             parse_mode: "HTML"
           }),
         }
@@ -52,8 +52,10 @@ class TelegramService {
 
       const data = await response.json();
       console.log('Message sent to Telegram successfully:', data);
+      return data.result.message_id;
     } catch (error) {
       console.error('Error sending to Telegram:', error);
+      return undefined;
     }
   }
 

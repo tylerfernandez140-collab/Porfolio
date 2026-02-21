@@ -20,6 +20,7 @@ export interface ChatMessage {
   timestamp: any;
   sessionId: string;
   telegramChatId?: string; // Added for Telegram integration
+  telegramMessageId?: number; // Added for Telegram reply mapping
 }
 
 export interface ChatSession {
@@ -29,10 +30,11 @@ export interface ChatSession {
   lastMessageTime: any;
   messageCount: number;
   telegramChatId?: string; // Added for Telegram integration
+  nickname?: string; // Added for user nickname
 }
 
 // Generate or get session ID from localStorage
-const getSessionId = (): string => {
+export const getSessionId = (): string => {
   let sessionId = localStorage.getItem('chatSessionId');
   if (!sessionId) {
     sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -42,7 +44,7 @@ const getSessionId = (): string => {
 };
 
 // Save message to Firestore
-export const saveMessage = async (text: string, sender: "user" | "bot", telegramChatId?: string): Promise<void> => {
+export const saveMessage = async (text: string, sender: "user" | "bot", telegramChatId?: string, telegramMessageId?: number): Promise<void> => {
   try {
     const sessionId = getSessionId();
     
@@ -58,18 +60,21 @@ export const saveMessage = async (text: string, sender: "user" | "bot", telegram
     if (telegramChatId) {
       messageData.telegramChatId = telegramChatId;
     }
+    if (telegramMessageId) {
+      messageData.telegramMessageId = telegramMessageId;
+    }
     
     await addDoc(messagesRef, messageData);
 
-    // Update session info, passing telegramChatId
-    await updateSessionInfo(sessionId, text, telegramChatId);
+    // Update session info, passing telegramChatId and telegramMessageId
+    await updateSessionInfo(sessionId, text, telegramChatId, telegramMessageId);
   } catch (error) {
     console.error("Error saving message:", error);
   }
 };
 
 // Update session information
-const updateSessionInfo = async (sessionId: string, lastMessage: string, telegramChatId?: string): Promise<void> => {
+const updateSessionInfo = async (sessionId: string, lastMessage: string, telegramChatId?: string, telegramMessageId?: number): Promise<void> => {
   try {
     const sessionRef = doc(db, "chatSessions", sessionId);
     const sessionDoc = await getDoc(sessionRef);
@@ -83,6 +88,9 @@ const updateSessionInfo = async (sessionId: string, lastMessage: string, telegra
       if (telegramChatId) {
         updateData.telegramChatId = telegramChatId;
       }
+      if (telegramMessageId) {
+        updateData.telegramMessageId = telegramMessageId;
+      }
       await updateDoc(sessionRef, updateData);
     } else {
       const setData: any = {
@@ -94,6 +102,9 @@ const updateSessionInfo = async (sessionId: string, lastMessage: string, telegra
       };
       if (telegramChatId) {
         setData.telegramChatId = telegramChatId;
+      }
+      if (telegramMessageId) {
+        setData.telegramMessageId = telegramMessageId;
       }
       await setDoc(sessionRef, setData);
     }
@@ -123,7 +134,8 @@ export const getMessages = (callback: (messages: ChatMessage[]) => void) => {
         sender: data.sender,
         timestamp: data.timestamp,
         sessionId: data.sessionId,
-        telegramChatId: data.telegramChatId // Include telegramChatId when fetching
+        telegramChatId: data.telegramChatId, // Include telegramChatId when fetching
+        telegramMessageId: data.telegramMessageId // Include telegramMessageId when fetching
       });
     });
     callback(messages);
@@ -142,4 +154,14 @@ export const getAllSessions = async () => {
 // Clear current session
 export const clearSession = (): void => {
   localStorage.removeItem('chatSessionId');
+};
+
+export const saveNickname = async (sessionId: string, nickname: string): Promise<void> => {
+  try {
+    const sessionRef = doc(db, "chatSessions", sessionId);
+    await updateDoc(sessionRef, { nickname });
+    console.log(`Nickname "${nickname}" saved for session ${sessionId}`);
+  } catch (error) {
+    console.error("Error saving nickname:", error);
+  }
 };

@@ -3,7 +3,7 @@ import { MessageCircle, Send, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import lightMain from "../assets/light-main.png";
 import darkMain from "../assets/dark-main.png";
-import { saveMessage, getMessages, ChatMessage } from "../lib/chatService";
+import { saveMessage, getMessages, ChatMessage, saveNickname, getSessionId } from "../lib/chatService";
 import TelegramService from "../lib/telegramService";
 
 interface Message {
@@ -19,6 +19,8 @@ const AIChatBot = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [nickname, setNickname] = useState<string | null>(null);
+  const [showNicknameInput, setShowNicknameInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const telegramService = new TelegramService();
@@ -26,6 +28,14 @@ const AIChatBot = () => {
   // Load messages from Firebase when component mounts
   useEffect(() => {
     if (isOpen) {
+      const storedNickname = localStorage.getItem('chatNickname');
+      if (storedNickname) {
+        setNickname(storedNickname);
+        setShowNicknameInput(false);
+      } else {
+        setShowNicknameInput(true);
+      }
+
       const unsubscribe = getMessages((firebaseMessages: ChatMessage[]) => {
         // Convert Firebase messages to local format
         const convertedMessages: Message[] = firebaseMessages.map(msg => ({
@@ -93,6 +103,14 @@ const AIChatBot = () => {
     }
   };
 
+  const handleStartChat = async () => {
+    if (nickname) {
+      localStorage.setItem('chatNickname', nickname);
+      setShowNicknameInput(false);
+      await saveNickname(getSessionId(), nickname);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (inputValue.trim() === "") return;
 
@@ -108,10 +126,8 @@ const AIChatBot = () => {
     setIsTyping(true);
 
     // Save user message to Firebase, including telegramChatId
-    await saveMessage(inputValue, "user", telegramService.chatId);
-
-    // Send message to your Telegram
-    await telegramService.sendToTelegram(inputValue);
+    const telegramMessageId = await telegramService.sendToTelegram(inputValue, nickname || undefined);
+    await saveMessage(inputValue, "user", telegramService.chatId, telegramMessageId);
 
     try {
       const botResponse = await generateResponse(inputValue);
@@ -190,62 +206,84 @@ const AIChatBot = () => {
 
       {!isMinimized && (
         <>
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 h-[380px] bg-gray-50 dark:bg-gray-800">
-            <div className="space-y-3">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[70%] px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-600 ${
-                        message.sender === "user"
-                          ? "bg-black dark:bg-white text-white dark:text-black rounded-br-sm"
-                          : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-sm"
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
-                    </div>
-                  </div>
-                ))}
-                {isTyping && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-200 dark:bg-gray-700 px-4 py-3 rounded-2xl rounded-bl-sm border border-gray-300 dark:border-gray-600">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                        <div className="w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                        <div className="w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-          </div>
-
-          {/* Input */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-b-lg">
-            <div className="flex gap-2">
+          {showNicknameInput ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-4 h-[380px] bg-gray-50 dark:bg-gray-800">
+              <p className="text-lg text-center mb-4">Before we start, what should I call you?</p>
               <input
                 type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm bg-white dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                disabled={isTyping}
+                value={nickname || ''}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="Enter your nickname"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm bg-white dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 mb-4"
               />
               <button
-                onClick={handleSendMessage}
-                disabled={isTyping || inputValue.trim() === ""}
-                className="p-3 bg-black dark:bg-white text-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-                aria-label="Send message"
+                onClick={handleStartChat}
+                disabled={!nickname || nickname.trim() === ''}
+                className="w-full p-3 bg-black dark:bg-white text-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
-                <Send className="w-4 h-4" />
+                Start Chat
               </button>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 h-[380px] bg-gray-50 dark:bg-gray-800">
+                <div className="space-y-3">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-[70%] px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-600 ${
+                            message.sender === "user"
+                              ? "bg-black dark:bg-white text-white dark:text-black rounded-br-sm"
+                              : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-sm"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {isTyping && (
+                      <div className="flex justify-start">
+                        <div className="bg-gray-200 dark:bg-gray-700 px-4 py-3 rounded-2xl rounded-bl-sm border border-gray-300 dark:border-gray-600">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                            <div className="w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                            <div className="w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+              </div>
+
+              {/* Input */}
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-b-lg">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type your message..."
+                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm bg-white dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    disabled={isTyping}
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={isTyping || inputValue.trim() === ""}
+                    className="p-3 bg-black dark:bg-white text-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                    aria-label="Send message"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

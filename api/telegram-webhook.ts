@@ -25,15 +25,30 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       const telegramMessageId = message.message_id;
       const timestamp = new Date(message.date * 1000);
 
-      console.log(`Received Telegram message from chat ${telegramChatIdFromMessage}: ${telegramMessageText}`);
-      console.log(`Telegram Chat ID from message: ${telegramChatIdFromMessage}`);
-
       let sessionId = 'default_session';
-
       const chatSessionsRef = db.collection('chatSessions');
-      let existingSessionSnapshot; // Declare snapshot here
+      const chatMessagesRef = db.collection('chatMessages'); // New: Reference to chatMessages
 
-      if (telegramChatIdFromMessage) {
+      // Check if this is a reply to a previous message from the bot
+      if (message.reply_to_message && message.reply_to_message.message_id) {
+        const repliedToMessageId = message.reply_to_message.message_id;
+        console.log(`Received a reply to Telegram message ID: ${repliedToMessageId}`);
+
+        // Try to find the session associated with the replied-to message
+        const q = chatMessagesRef.where('telegramMessageId', '==', repliedToMessageId).limit(1);
+        const repliedToMessageSnapshot = await q.get();
+
+        if (!repliedToMessageSnapshot.empty) {
+          sessionId = repliedToMessageSnapshot.docs[0].data().sessionId;
+          console.log(`Found session ${sessionId} for replied-to Telegram message ID ${repliedToMessageId}`);
+        } else {
+          console.warn(`No session found for replied-to Telegram message ID ${repliedToMessageId}. Falling back to existing session linking logic.`);
+        }
+      }
+
+      // If sessionId is still default_session, or if it wasn't a reply, proceed with existing linking logic
+      if (sessionId === 'default_session' && telegramChatIdFromMessage) {
+        let existingSessionSnapshot;
         const q = chatSessionsRef.where('telegramChatId', '==', String(telegramChatIdFromMessage)).limit(1);
         console.log(`Firestore query for telegramChatId: ${telegramChatIdFromMessage}`);
         existingSessionSnapshot = await q.get(); // Execute query and assign to existingSessionSnapshot
@@ -41,10 +56,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         console.warn('No telegramChatId found in message. Proceeding to link unlinked sessions or use default.');
       }
 
-      if (existingSessionSnapshot && !existingSessionSnapshot.empty) { // Use existingSessionSnapshot here
-        sessionId = existingSessionSnapshot.docs[0].id;
-        console.log(`Found existing session ${sessionId} for Telegram chat ID ${telegramChatIdFromMessage}`);
-      } else {
+      if (sessionId === 'default_session') {
         // If no existing session found, try to link to the most recent unlinked web chat session
         console.warn(`No existing session found for Telegram chat ID ${telegramChatIdFromMessage}. Attempting to link to an unlinked web session.`);
 
