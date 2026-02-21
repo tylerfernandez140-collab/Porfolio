@@ -20,37 +20,47 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     const { message } = req.body;
 
     if (message && message.text) {
-      const telegramChatId = message.chat.id;
+      const telegramChatIdFromMessage = message.chat.id;
       const telegramMessageText = message.text;
       const telegramMessageId = message.message_id;
-      const timestamp = new Date(message.date * 1000); // Telegram timestamp is in seconds
+      const timestamp = new Date(message.date * 1000);
 
-      console.log(`Received Telegram message from chat ${telegramChatId}: ${telegramMessageText}`);
+      console.log(`Received Telegram message from chat ${telegramChatIdFromMessage}: ${telegramMessageText}`);
 
-      let sessionId = 'default_session'; // Declare sessionId here
+      let sessionId = 'default_session';
 
-      // Find the chat session associated with this Telegram chat ID
       const chatSessionsRef = db.collection('chatSessions');
-      const q = chatSessionsRef.where('telegramChatId', '==', telegramChatId).limit(1);
-      const snapshot = await q.get();
-
-      if (!snapshot.empty) {
-        sessionId = snapshot.docs[0].id;
-        console.log(`Found existing session ${sessionId} for Telegram chat ID ${telegramChatId}`);
+      let q;
+      if (telegramChatIdFromMessage) {
+        q = chatSessionsRef.where('telegramChatId', '==', String(telegramChatIdFromMessage)).limit(1);
       } else {
-        console.warn(`No existing session found for Telegram chat ID ${telegramChatId}. Using default session.`);
+        console.warn('No telegramChatId found in message. Using default session.');
+      }
+
+      if (q) {
+        const snapshot = await q.get();
+        if (!snapshot.empty) {
+          sessionId = snapshot.docs[0].id;
+          console.log(`Found existing session ${sessionId} for Telegram chat ID ${telegramChatIdFromMessage}`);
+        } else {
+          console.warn(`No existing session found for Telegram chat ID ${telegramChatIdFromMessage}. Using default session.`);
+        }
       }
       console.log(`Using sessionId: ${sessionId} for Telegram reply.`);
 
       try {
-        await db.collection('chatMessages').add({
+        const chatMessageData: any = {
           sessionId: sessionId,
           text: telegramMessageText,
-          sender: 'bot', // Telegram replies are from the bot's perspective to the user
+          sender: 'bot',
           timestamp: timestamp,
-          telegramMessageId: telegramMessageId, // Store Telegram's message ID for reference
-          telegramChatId: telegramChatId, // Store Telegram's chat ID for future mapping
-        });
+          telegramMessageId: telegramMessageId,
+        };
+        if (telegramChatIdFromMessage) {
+          chatMessageData.telegramChatId = String(telegramChatIdFromMessage);
+        }
+
+        await db.collection('chatMessages').add(chatMessageData);
         console.log('Telegram reply saved to Firebase.');
         res.status(200).send('OK');
       } catch (error) {
@@ -59,7 +69,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       }
     } else {
       console.log('Received non-message update from Telegram:', req.body);
-      res.status(200).send('OK'); // Acknowledge other updates
+      res.status(200).send('OK');
     }
   } else {
     res.status(405).send('Method Not Allowed');

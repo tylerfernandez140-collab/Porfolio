@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { useNavigate } from "react-router-dom";
 
@@ -37,6 +37,24 @@ const Index = () => {
   const navigate = useNavigate();
 
   const [showAll, setShowAll] = useState(false);
+
+  const [visibleSections, setVisibleSections] = useState({
+    profileHeader: false,
+    mainLayout: false,
+    projects: false,
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisibleSections({
+        profileHeader: true,
+        mainLayout: true,
+        projects: true,
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const portfolioData = {
 
@@ -210,49 +228,45 @@ experience: [
 
       {
 
-        name: "CodeCred",
+        name: "DOCUFIND",
 
-        description: "Online certifications for programmers",
+        description: "Document Control System\nPangasinan State University - Lingayen Campus",
 
-        url: "https://codecred.dev",
+        url: "https://v0-document-finder-system.vercel.app/auth/login",
 
-        urlDisplay: "codecred.dev",
-
-      },
-
-      {
-
-        name: "BASE404",
-
-        description: "Online coding bootcamp",
-
-        url: "https://base-404.com",
-
-        urlDisplay: "base-404.com",
+        urlDisplay: "v0-document-finder-system",
 
       },
 
       {
 
-        name: "DIIN.PH",
+        name: "DriveEasy",
 
-        description: "AI-powered wardrobe assistant",
+        description: "Wazed Driving School\nAguilar, Pangasinan",
 
-        url: "https://diin.ph",
+        url: "https://driveeasy-main.com/",
 
-        urlDisplay: "diin.ph",
+        urlDisplay: "driveeasy-main.com",
 
       },
 
       {
 
-        name: "DYNAMIS Workout Tracker",
+        name: "LinkHabi",
 
-        description: "AI-powered workout tracker",
+        description: "AI-powered E-commerce\nAguilar, Pangaisinan",
 
-        url: "https://dynamis.app",
+        urlDisplay: "localhost:8080",
 
-        urlDisplay: "dynamis.app",
+      },
+
+      {
+
+        name: "BYAHERO",
+
+        description: "AI-powered Commuter Guide\nParañaque City, Metro Manila",
+
+        urlDisplay: "Application",
 
       },
 
@@ -269,8 +283,10 @@ experience: [
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
 
         {/* Profile Header */}
-
-        <ProfileHeader
+        <div className={`transition-all duration-700 ease-out ${
+          visibleSections.profileHeader ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}>
+          <ProfileHeader
 
           name={portfolioData.profile.name}
 
@@ -289,12 +305,14 @@ experience: [
        
 
         />
+        </div>
 
 
 
         {/* Main Two-Column Layout */}
-
-        <section className="mt-10 grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
+        <section className={`mt-10 grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch transition-all duration-700 ease-out ${
+          visibleSections.mainLayout ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}>
 
           {/* Top Row - About & Experience side by side */}
 
@@ -345,8 +363,9 @@ experience: [
 
 
         {/* Bottom Section - Recent Projects Only */}
-
-        <section className="mt-6">
+        <section className={`mt-6 transition-all duration-700 ease-out ${
+          visibleSections.projects ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}>
 
           {/* Recent Projects */}
 

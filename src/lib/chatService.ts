@@ -48,13 +48,18 @@ export const saveMessage = async (text: string, sender: "user" | "bot", telegram
     
     const messagesRef = collection(db, "chatMessages");
     
-    await addDoc(messagesRef, {
+    const messageData: any = {
       text,
       sender,
       sessionId,
       timestamp: serverTimestamp(),
-      telegramChatId // Store telegramChatId with the message if available
-    });
+    };
+
+    if (telegramChatId) {
+      messageData.telegramChatId = telegramChatId;
+    }
+    
+    await addDoc(messagesRef, messageData);
 
     // Update session info, passing telegramChatId
     await updateSessionInfo(sessionId, text, telegramChatId);

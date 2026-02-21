@@ -154,8 +154,10 @@ const AIChatBot = () => {
 
   return (
     <div 
-      className={`fixed bottom-20 right-6 z-50 bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 ${
-      isMinimized ? "w-80 h-14" : "w-96 h-[500px]"
+      className={`fixed z-50 bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 
+      ${isMinimized 
+        ? "w-80 h-14 bottom-20 right-6" 
+        : "w-72 h-[200px] bottom-96 right-6 sm:w-96 sm:h-[500px] sm:bottom-20 sm:right-6"
       }`}
       style={{
         boxShadow: theme === "dark" 

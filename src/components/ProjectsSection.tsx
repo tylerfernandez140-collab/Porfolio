@@ -4,8 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 interface Project {
   name: string;
   description: string;
-  urlDisplay: string;
-  url: string;
+  urlDisplay?: string;
+  url?: string;
 }
 
 interface ProjectsSectionProps {
@@ -26,23 +26,48 @@ const ProjectsSection = ({ projects }: ProjectsSectionProps) => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {projects.map((project) => (
-            <a
-              key={project.name}
-              href={project.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group block p-4 rounded-xl border border-gray-300 hover:border-foreground/20 hover:bg-secondary/50 transition-all"
-            >
-              <h3 className="font-semibold text-foreground text-sm">
-                {project.name}
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1 mb-2">
-                {project.description}
-              </p>
-              <span className="inline-block px-2 py-1 bg-secondary text-xs text-muted-foreground font-mono rounded">
-                {project.urlDisplay}
-              </span>
-            </a>
+            project.url ? (
+              <a
+                key={project.name}
+                href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block p-4 rounded-xl border border-gray-300 hover:border-foreground/20 hover:bg-secondary/50 transition-all"
+              >
+                <h3 className="font-semibold text-foreground text-sm">
+                  {project.name}
+                </h3>
+                <p 
+                  className="text-sm text-muted-foreground mt-1 mb-2"
+                  dangerouslySetInnerHTML={{ __html: project.description.replace(/\n/g, '<br/>') }}
+                >
+                </p>
+                {project.urlDisplay && (
+                  <span className="inline-block px-2 py-1 bg-secondary text-xs text-muted-foreground font-mono rounded">
+                    {project.urlDisplay}
+                  </span>
+                )}
+              </a>
+            ) : (
+              <div
+                key={project.name}
+                className="group block p-4 rounded-xl border border-gray-300 hover:border-foreground/20 hover:bg-secondary/50 transition-all"
+              >
+                <h3 className="font-semibold text-foreground text-sm">
+                  {project.name}
+                </h3>
+                <p 
+                  className="text-sm text-muted-foreground mt-1 mb-2"
+                  dangerouslySetInnerHTML={{ __html: project.description.replace(/\n/g, '<br/>') }}
+                >
+                </p>
+                {project.urlDisplay && (
+                  <span className="inline-block px-2 py-1 bg-secondary text-xs text-muted-foreground font-mono rounded">
+                    {project.urlDisplay}
+                  </span>
+                )}
+              </div>
+            )
           ))}
         </div>
       </CardContent>
