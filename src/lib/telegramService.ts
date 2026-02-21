@@ -17,7 +17,10 @@ class TelegramService {
   }
 
   // Send message to Telegram
-  async sendToTelegram(userMessage: string, nickname?: string): Promise<number | undefined> {
+  async sendToTelegram(userMessage: string, nickname: string) {
+    if (!nickname) {
+      throw new Error("Nickname is required before sending message.");
+    }
     console.log('Telegram Service - Bot Token:', this.botToken ? 'Set' : 'Not set');
     console.log('Telegram Service - Chat ID:', this.chatId ? 'Set' : 'Not set');
     console.log('Telegram Service - Message:', userMessage);
@@ -37,7 +40,7 @@ class TelegramService {
           },
           body: JSON.stringify({
             chat_id: this.chatId,
-            text: `📩 New message from your portfolio chat:\n\n${nickname ? nickname + ': ' : ''}"${userMessage}"\n\nReply to this message to respond directly to the visitor!"`
+            text: `📩 New message from your portfolio chat:\n\n👤 ${nickname}: ${userMessage}\n\nReply to this message to respond directly to the visitor.`,
           }),
         }
       );

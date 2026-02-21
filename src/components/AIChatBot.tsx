@@ -4,7 +4,7 @@ import { useTheme } from "next-themes";
 import lightMain from "../assets/light-main.png";
 import darkMain from "../assets/dark-main.png";
 import { saveMessage, getMessages, ChatMessage, saveNickname, getSessionId } from "../lib/chatService";
-import TelegramService from "../lib/telegramService";
+import TelegramService from "../lib/TelegramService";
 
 interface Message {
   id: string;
@@ -127,6 +127,7 @@ const AIChatBot = () => {
 
     // Save user message to Firebase, including telegramChatId
     const currentNickname = localStorage.getItem('chatNickname') || nickname || undefined;
+    console.log('AIChatBot - Sending nickname to Telegram:', currentNickname);
     const telegramMessageId = await telegramService.sendToTelegram(inputValue, currentNickname);
     await saveMessage(inputValue, "user", telegramService.chatId, telegramMessageId);
 
