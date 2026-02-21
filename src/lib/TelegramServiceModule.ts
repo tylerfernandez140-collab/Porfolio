@@ -6,7 +6,7 @@ interface TelegramMessage {
   telegramId?: string;
 }
 
-class TelegramService {
+class TelegramServiceModule {
   private botToken: string;
   public readonly chatId: string;
 

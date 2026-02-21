@@ -4,7 +4,7 @@ import { useTheme } from "next-themes";
 import lightMain from "../assets/light-main.png";
 import darkMain from "../assets/dark-main.png";
 import { saveMessage, getMessages, ChatMessage, saveNickname, getSessionId } from "../lib/chatService";
-import TelegramService from "../lib/TelegramService";
+import TelegramService from "../lib/TelegramServiceModule";
 
 interface Message {
   id: string;
