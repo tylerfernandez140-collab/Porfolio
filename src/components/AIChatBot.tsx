@@ -5,6 +5,8 @@ import lightMain from "../assets/light-main.png";
 import darkMain from "../assets/dark-main.png";
 import { saveMessage, getMessages, ChatMessage, saveNickname, getSessionId } from "../lib/chatService";
 import TelegramService from "../lib/TelegramServiceModule";
+import { db } from "../lib/firebase"; // Import db
+import { collection, query, where, getDocs } from "firebase/firestore"; // Import Firestore functions
 
 interface Message {
   id: string;
@@ -28,6 +30,26 @@ const AIChatBot = () => {
   // Load messages from Firebase when component mounts
   useEffect(() => {
     if (isOpen) {
+      const synchronizeSession = async () => {
+        const telegramChatId = telegramService.chatId;
+        if (telegramChatId) {
+          const q = query(collection(db, "chatSessions"), where("telegramChatId", "==", telegramChatId));
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            const firebaseSessionId = querySnapshot.docs[0].id;
+            const currentLocalSessionId = localStorage.getItem('chatSessionId');
+
+            if (currentLocalSessionId !== firebaseSessionId) {
+              console.log(`Synchronizing session: Local ID ${currentLocalSessionId} -> Firebase ID ${firebaseSessionId}`);
+              localStorage.setItem('chatSessionId', firebaseSessionId);
+            }
+          }
+        }
+      };
+
+      synchronizeSession();
+
       const storedNickname = localStorage.getItem('chatNickname');
       if (storedNickname) {
         setNickname(storedNickname);
