@@ -17,7 +17,7 @@ export interface ChatMessage {
   id?: string;
   text: string;
   sender: "user" | "bot";
-  timestamp: any;
+  timestamp: Date;
   sessionId: string;
   telegramChatId?: string; // Added for Telegram integration
   telegramMessageId?: number; // Added for Telegram reply mapping

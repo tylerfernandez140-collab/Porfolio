@@ -92,7 +92,7 @@ const AIChatBot = () => {
         if (querySnapshot.empty) {
           const welcomeMessage: Message = {
             id: Date.now().toString(),
-            text: "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out his website! How can I help you today?",
+            text: "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?",
             sender: "bot",
             timestamp: new Date(),
             sender_name: "",
