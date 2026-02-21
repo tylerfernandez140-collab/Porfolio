@@ -66,43 +66,33 @@ const AIChatBot = () => {
       }
 
       const ensureWelcomeMessage = async () => {
-        const currentSessionId = getSessionId();
-        if (!currentSessionId) {
-          return;
-        }
+    const currentSessionId = getSessionId();
+    if (!currentSessionId) {
+      return;
+    }
 
-
-
-        // Check if welcome message has already been shown for this session
-        const welcomeMessageShown = localStorage.getItem(`welcomeMessageShown_${currentSessionId}`);
-
-        if (welcomeMessageShown) {
-          return;
-        }
-
-        const messagesRef = collection(db, "chatSessions", currentSessionId, "chatMessages");
-        const q = query(
-          messagesRef,
-          where("sender", "==", "bot"),
-          where("sender_type", "==", "ai"),
-          where("source", "==", "ai"),
-          where("text", "==", "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?")
-        );
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-          const welcomeMessage: Message = {
-            id: Date.now().toString(),
-            text: "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?",
-            sender: "bot",
-            timestamp: new Date(),
-            sender_name: "",
-            sender_type: "ai",
-            source: "ai",
-          };
-          await saveMessage(welcomeMessage.text, "bot", "", "ai", "ai");
-          localStorage.setItem(`welcomeMessageShown_${currentSessionId}`, "true");
-        }
+    const messagesRef = collection(db, "chatSessions", currentSessionId, "chatMessages");
+    const q = query(
+      messagesRef,
+      where("sender", "==", "bot"),
+      where("sender_type", "==", "ai"),
+      where("source", "==", "ai"),
+      where("text", "==", "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?")
+    );
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      const welcomeMessage: Message = {
+        id: Date.now().toString(),
+        text: "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?",
+        sender: "bot",
+        timestamp: new Date(),
+        sender_name: "",
+        sender_type: "ai",
+        source: "ai",
       };
+      await saveMessage(welcomeMessage.text, "bot", "", "ai", "ai");
+    }
+  };
 
       ensureWelcomeMessage();
 
