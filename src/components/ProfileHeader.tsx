@@ -39,7 +39,7 @@ const ProfileHeader = ({
   const [isClicked, setIsClicked] = useState(false);
 
   return (
-    <header className="flex flex-row items-center md:items-start gap-6">
+    <header className="flex flex-row items-start gap-6">
       <div 
         className="w-40 h-40 md:w-40 md:h-40 relative border-0 border-none outline-none overflow-hidden rounded-lg cursor-pointer select-none"
         onMouseEnter={() => setIsHovered(true)}
@@ -102,8 +102,8 @@ const ProfileHeader = ({
         />
       </div>
       
-      <div className="flex-1 text-center md:text-left">
-        <div className="flex items-center justify-between gap-2 mb-1">
+      <div className="flex-1 flex flex-col items-start">
+        <div className="flex items-center justify-center md:justify-between gap-2 mb-1">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl md:text-3xl font-bold">{name}</h1>
             <svg viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" aria-label="Verified user">
