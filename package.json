@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "start:gemini-api": "nodemon --exec node --loader ts-node/esm api/gemini.ts"
+    "start:gemini-api": "nodemon --exec node --loader ts-node/esm api/gemini.ts",
+    "run:set-webhook": "nodemon --exec node --loader ts-node/esm scripts/setTelegramWebhook.ts",
+    "build:set-webhook": "tsc --project tsconfig.node.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -11,9 +11,9 @@ class TelegramService {
   public readonly chatId: string;
 
   constructor() {
-    // Use import.meta.env for Vite
-    this.botToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || '';
-    this.chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID || '';
+    // Use import.meta.env for Vite (client-side) and process.env for Node.js (server-side)
+    this.botToken = import.meta.env?.VITE_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
+    this.chatId = import.meta.env?.VITE_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID || '';
   }
 
   // Send message to Telegram
