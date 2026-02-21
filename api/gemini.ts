@@ -1,14 +1,13 @@
-import express from 'express';
-import cors from 'cors';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: './server.env' });
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+export default async function (req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
-app.post('/api/gemini', async (req, res) => {
   const { userMessage } = req.body;
   
   console.log('API Key from env:', process.env.GEMINI_API_KEY ? 'Loaded' : 'Not loaded');
@@ -73,9 +72,4 @@ User message: ${userMessage}`
     console.error('Gemini API error:', error);
     res.status(500).json({ error: 'Failed to generate response' });
   }
-});
-
-const PORT = 3001;
-app.listen(PORT, () => {
-  console.log(`Gemini API server running on port ${PORT}`);
-});
+}
