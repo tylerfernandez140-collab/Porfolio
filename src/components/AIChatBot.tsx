@@ -68,7 +68,7 @@ const AIChatBot = () => {
   const generateResponse = async (userMessage: string): Promise<string> => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/gemini`,
+        `/api/gemini`,
         {
           method: "POST",
           headers: {
