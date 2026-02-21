@@ -13,7 +13,7 @@ interface Message {
   id: string;
   text: string;
   sender: "user" | "bot";
-  timestamp: any;
+  timestamp: Date;
   sender_name?: string;
   sender_type?: "human" | "ai";
   source?: "telegram" | "web" | "ai";
@@ -205,7 +205,10 @@ const AIChatBot = () => {
 
       const data = await response.json();
       
-      if (data.response) {
+      if (!response.ok && data.error) {
+        // If the response is not OK and contains a custom error message
+        return data.error;
+      } else if (data.response) {
         return data.response;
       } else {
         return "I apologize, but I'm having trouble processing your request right now. Please try again later.";

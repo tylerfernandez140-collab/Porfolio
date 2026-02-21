@@ -68,6 +68,11 @@ User message: ${userMessage}`
     console.log('Gemini API raw response text:', rawResponseText);
 
     if (!response.ok) {
+      const errorBody = JSON.parse(rawResponseText);
+      if (response.status === 429) {
+        // Specific message for quota exceeded
+        return res.status(429).json({ error: "I'm currently experiencing high demand and have exceeded my daily message quota. Please try again later or contact Ivan directly at fernandezivan140@gmail.com for urgent inquiries!" });
+      }
       console.error('Gemini API error response body:', rawResponseText);
       throw new Error(`Gemini API returned status ${response.status}: ${rawResponseText}`);
     }
