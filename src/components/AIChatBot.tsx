@@ -126,7 +126,8 @@ const AIChatBot = () => {
     setIsTyping(true);
 
     // Save user message to Firebase, including telegramChatId
-    const telegramMessageId = await telegramService.sendToTelegram(inputValue, nickname || undefined);
+    const currentNickname = localStorage.getItem('chatNickname') || nickname || undefined;
+    const telegramMessageId = await telegramService.sendToTelegram(inputValue, currentNickname);
     await saveMessage(inputValue, "user", telegramService.chatId, telegramMessageId);
 
     try {

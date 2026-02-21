@@ -37,8 +37,7 @@ class TelegramService {
           },
           body: JSON.stringify({
             chat_id: this.chatId,
-            text: `📩 New message from your portfolio chat:\n\n${nickname ? nickname + ': ' : ''}"${userMessage}"\n\nReply to this message to respond directly to the visitor!`,
-            parse_mode: "HTML"
+            text: `📩 New message from your portfolio chat:\n\n${nickname ? nickname + ': ' : ''}"${userMessage}"\n\nReply to this message to respond directly to the visitor!"`
           }),
         }
       );
