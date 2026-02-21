@@ -118,8 +118,20 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         return res.status(500).send('Error: Session ID could not be determined.');
       }
 
+interface ChatMessageData {
+  sessionId: string;
+  text: string;
+  sender: 'user';
+  timestamp: Date;
+  telegramMessageId: number;
+  sender_name: string;
+  sender_type: "human";
+  source: "telegram";
+  telegramChatId?: string;
+}
+
       try {
-        const chatMessageData: any = {
+        const chatMessageData: ChatMessageData = {
           sessionId: sessionId,
           text: telegramMessageText,
           sender: 'user', // Telegram messages are from a user

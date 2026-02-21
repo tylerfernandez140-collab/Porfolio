@@ -64,14 +64,15 @@ User message: ${userMessage}`
     // Log the raw response status and headers
     console.log('Gemini API raw response status:', response.status);
     console.log('Gemini API raw response headers:', response.headers);
+    const rawResponseText = await response.text(); // Read raw response text
+    console.log('Gemini API raw response text:', rawResponseText);
 
     if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('Gemini API error response body:', errorBody);
-      throw new Error(`Gemini API returned status ${response.status}: ${errorBody}`);
+      console.error('Gemini API error response body:', rawResponseText);
+      throw new Error(`Gemini API returned status ${response.status}: ${rawResponseText}`);
     }
 
-    const data = await response.json();
+    const data = JSON.parse(rawResponseText); // Parse the raw text as JSON
     console.log('Gemini API response data:', JSON.stringify(data, null, 2));
     
     const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";

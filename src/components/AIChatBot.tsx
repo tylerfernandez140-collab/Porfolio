@@ -27,6 +27,10 @@ const AIChatBot = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [nickname, setNickname] = useState<string | null>(null);
   const [showNicknameInput, setShowNicknameInput] = useState(false);
+  const [isAITakingOver, setIsAITakingOver] = useState(true);
+  const [humanModeStarted, setHumanModeStarted] = useState(false);
+  const [lastSenderType, setLastSenderType] = useState<"visitor" | "human" | null>(null);
+  const [aiTakeoverStarted, setAiTakeoverStarted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const telegramService = new TelegramService();
@@ -45,7 +49,6 @@ const AIChatBot = () => {
             const currentLocalSessionId = localStorage.getItem('chatSessionId');
 
             if (currentLocalSessionId !== firebaseSessionId) {
-              console.log(`Synchronizing session: Local ID ${currentLocalSessionId} -> Firebase ID ${firebaseSessionId}`);
               localStorage.setItem('chatSessionId', firebaseSessionId);
             }
           }
@@ -62,6 +65,47 @@ const AIChatBot = () => {
         setShowNicknameInput(true);
       }
 
+      const ensureWelcomeMessage = async () => {
+        const currentSessionId = getSessionId();
+        if (!currentSessionId) {
+          return;
+        }
+
+
+
+        // Check if welcome message has already been shown for this session
+        const welcomeMessageShown = localStorage.getItem(`welcomeMessageShown_${currentSessionId}`);
+
+        if (welcomeMessageShown) {
+          return;
+        }
+
+        const messagesRef = collection(db, "chatSessions", currentSessionId, "chatMessages");
+        const q = query(
+          messagesRef,
+          where("sender", "==", "bot"),
+          where("sender_type", "==", "ai"),
+          where("source", "==", "ai"),
+          where("text", "==", "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?")
+        );
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          const welcomeMessage: Message = {
+            id: Date.now().toString(),
+            text: "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out his website! How can I help you today?",
+            sender: "bot",
+            timestamp: new Date(),
+            sender_name: "",
+            sender_type: "ai",
+            source: "ai",
+          };
+          await saveMessage(welcomeMessage.text, "bot", "", "ai", "ai");
+          localStorage.setItem(`welcomeMessageShown_${currentSessionId}`, "true");
+        }
+      };
+
+      ensureWelcomeMessage();
+
       const unsubscribe = getMessages((firebaseMessages: ChatMessage[]) => {
         // Convert Firebase messages to local format
         const convertedMessages: Message[] = firebaseMessages.map(msg => ({
@@ -73,31 +117,68 @@ const AIChatBot = () => {
           sender_type: msg.sender_type,
           source: msg.source,
         }));
+        setMessages(convertedMessages);
 
-        // If no messages, add and save welcome message
-        if (convertedMessages.length === 0) {
-          const welcomeMessage: Message = {
-            id: Date.now().toString(),
-            text: "Hi there! 👋🏻 I'm Ivan.\n\nThanks for checking out my website! How can I help you today?",
-            sender: "bot",
-            timestamp: new Date(),
-            sender_name: "",
-            sender_type: "ai",
-            source: "ai",
-          };
-          setMessages([welcomeMessage]);
-          // Save welcome message to Firebase
-          saveMessage(welcomeMessage.text, "bot", "", "ai", "ai");
-        } else {
-          setMessages(convertedMessages);
+        const last = convertedMessages[convertedMessages.length - 1];
+
+        if (!last) return;
+
+        if (last.sender_type === "human" && last.source === "telegram") {
+          setLastSenderType("human");
+          setIsAITakingOver(false); // Ivan is online, AI should not take over
+          setAiTakeoverStarted(false); // Reset takeover flag when human replies
+        } else if (last.sender === "user" && last.source === "web") {
+          setLastSenderType("visitor");
+          setIsAITakingOver(true); // Web visitor, AI can take over if timer triggers
+          setAiTakeoverStarted(false); // Reset takeover flag when visitor sends message
+        }
+
+        // Find the last message from Ivan (specifically via Telegram)
+        const hasHumanReply = convertedMessages.some(
+          (msg) => msg.sender_type === "human" && msg.source === "telegram"
+        );
+
+        if (hasHumanReply) {
+          setHumanModeStarted(true);
         }
       });
 
       return () => unsubscribe();
     }
-  }, [isOpen]);
+  }, [isOpen, telegramService.chatId]);
 
+  useEffect(() => {
+    if (!humanModeStarted) return;
+    if (!lastSenderType) return;
 
+    const visitorOfflineText =
+      "Ivan is now offline. I'm here to help you with any questions about his portfolio or services. How can I assist you today?";
+
+    const humanAwayText =
+      "Looks like you're away. You can chat here again anytime if you need help.";
+
+    const timer = setTimeout(async () => {
+      if (!aiTakeoverStarted) {
+        setAiTakeoverStarted(true);
+        const takeoverMessageText =
+          lastSenderType === "visitor"
+            ? visitorOfflineText
+            : humanAwayText;
+
+        await saveMessage(
+          takeoverMessageText,
+          "bot",
+          "",
+          "ai",
+          "ai"
+        );
+
+        setIsAITakingOver(true);
+      }
+    }, 60 * 1000);
+
+    return () => clearTimeout(timer);
+  }, [humanModeStarted, lastSenderType, aiTakeoverStarted]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -160,29 +241,34 @@ const AIChatBot = () => {
     setInputValue("");
     setIsTyping(true);
 
-    // Save user message to Firebase, ensuring sender_name is "You"
-    const telegramMessageId = await telegramService.sendToTelegram(inputValue, "You");
-    await saveMessage(inputValue, "user", "You", "human", "web", telegramService.chatId, telegramMessageId);
+    // Save user message to Firebase, ensuring sender_name is the nickname
+    const senderName = nickname || "You"; // Use nickname if available, otherwise "You"
+    const telegramMessageId = await telegramService.sendToTelegram(inputValue, senderName);
+    await saveMessage(inputValue, "user", senderName, "human", "web", telegramService.chatId, telegramMessageId);
 
-    try {
-      const botResponse = await generateResponse(inputValue);
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: botResponse,
-        sender: "bot",
-        timestamp: new Date(),
-        sender_name: "",
-        sender_type: "ai",
-        source: "ai",
-      };
-      setMessages(prev => [...prev, botMessage]);
-      
-      // Save bot response to Firebase
-      await saveMessage(botResponse, "bot", "", "ai", "ai", telegramService.chatId);
-    } catch (error) {
-      console.error("Error generating response:", error);
-    } finally {
-      setIsTyping(false);
+    if (isAITakingOver) {
+      try {
+        const botResponse = await generateResponse(inputValue);
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: botResponse,
+          sender: "bot",
+          timestamp: new Date(),
+          sender_name: "",
+          sender_type: "ai",
+          source: "ai",
+        };
+        setMessages(prev => [...prev, botMessage]);
+        
+        // Save bot response to Firebase
+        await saveMessage(botResponse, "bot", "", "ai", "ai", telegramService.chatId);
+      } catch (error) {
+        console.error("Error generating response:", error);
+      } finally {
+        setIsTyping(false);
+      }
+    } else {
+      setIsTyping(false); // If AI is not taking over, stop typing indicator immediately
     }
   };
 
@@ -268,12 +354,11 @@ const AIChatBot = () => {
               <div className="flex-1 overflow-y-auto p-4 h-[380px] bg-gray-50 dark:bg-gray-800">
                 <div className="space-y-3">
                     {messages.map((message) => {
-                      console.log("Message being rendered:", message);
                       return (
-                      <div
-                        key={message.id}
-                        className={`flex flex-col ${message.sender === "user" ? "items-end" : "items-start"}`}
-                      >
+              <div
+                key={message.id}
+                className={`flex flex-col ${message.sender === "user" && message.source === "web" ? "items-end" : "items-start"}`}
+              >
                         <div className="flex items-center mb-1">
                           <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                             {message.sender_type === "human" && message.source === "telegram" && <User className="w-5 h-5 mr-1" />}
