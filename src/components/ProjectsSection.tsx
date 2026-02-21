@@ -14,17 +14,14 @@ interface ProjectsSectionProps {
 
 const ProjectsSection = ({ projects }: ProjectsSectionProps) => {
   return (
-    <Card className="border-border/50">
+    <Card className="border border-gray-300 shadow-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:-translate-y-1">
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="section-title mb-0">
             <FolderOpen className="w-5 h-5" />
             Recent Projects
           </h2>
-          <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            View All
-            <ChevronRight className="w-4 h-4" />
-          </button>
+
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -34,7 +31,7 @@ const ProjectsSection = ({ projects }: ProjectsSectionProps) => {
               href={project.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group block p-4 rounded-xl border border-border/50 hover:border-foreground/20 hover:bg-secondary/50 transition-all"
+              className="group block p-4 rounded-xl border border-gray-300 hover:border-foreground/20 hover:bg-secondary/50 transition-all"
             >
               <h3 className="font-semibold text-foreground text-sm">
                 {project.name}

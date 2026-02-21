@@ -13,13 +13,13 @@ interface ExperienceSectionProps {
 
 const ExperienceSection = ({ experiences }: ExperienceSectionProps) => {
   return (
-    <div>
+    <div className="h-full flex flex-col p-5 bg-card rounded-lg border border-gray-300 shadow-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:-translate-y-1">
       <h2 className="section-title">
         <Briefcase className="w-5 h-5" />
         Experience
       </h2>
 
-      <div className="space-y-4">
+      <div className="space-y-3 flex-1 flex flex-col justify-between">
         {experiences.map((exp, index) => (
           <div key={index} className="flex items-start gap-3">
             <div className="mt-2">

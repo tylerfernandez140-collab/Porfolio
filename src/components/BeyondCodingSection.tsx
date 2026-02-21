@@ -7,7 +7,7 @@ interface BeyondCodingSectionProps {
 
 const BeyondCodingSection = ({ paragraphs }: BeyondCodingSectionProps) => {
   return (
-    <Card className="border-border/50">
+    <Card className="border border-gray-300 shadow-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:-translate-y-1">
       <CardContent className="p-5">
         <h2 className="section-title">
           <Sparkles className="w-5 h-5" />
