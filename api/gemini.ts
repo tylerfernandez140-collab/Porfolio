@@ -61,15 +61,29 @@ User message: ${userMessage}`
       }
     );
 
+    // Log the raw response status and headers
+    console.log('Gemini API raw response status:', response.status);
+    console.log('Gemini API raw response headers:', response.headers);
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('Gemini API error response body:', errorBody);
+      throw new Error(`Gemini API returned status ${response.status}: ${errorBody}`);
+    }
+
     const data = await response.json();
-    console.log('Gemini API response:', JSON.stringify(data, null, 2));
+    console.log('Gemini API response data:', JSON.stringify(data, null, 2));
     
     const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
     console.log('Generated text:', generatedText);
 
     res.status(200).json({ response: generatedText });
   } catch (error) {
-    console.error('Gemini API error:', error);
-    res.status(500).json({ error: 'Failed to generate response' });
+    console.error('Gemini API request failed:', error);
+    if (error instanceof Error) {
+      res.status(500).json({ error: `Failed to generate response: ${error.message}` });
+    } else {
+      res.status(500).json({ error: 'Failed to generate response due to an unknown error.' });
+    }
   }
 }
