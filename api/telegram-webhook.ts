@@ -26,6 +26,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       const timestamp = new Date(message.date * 1000);
 
       console.log(`Received Telegram message from chat ${telegramChatIdFromMessage}: ${telegramMessageText}`);
+      console.log(`Telegram Chat ID from message: ${telegramChatIdFromMessage}`);
 
       let sessionId = 'default_session';
 
@@ -33,6 +34,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       let q;
       if (telegramChatIdFromMessage) {
         q = chatSessionsRef.where('telegramChatId', '==', String(telegramChatIdFromMessage)).limit(1);
+        console.log(`Firestore query for telegramChatId: ${telegramChatIdFromMessage}`);
       } else {
         console.warn('No telegramChatId found in message. Using default session.');
       }
@@ -44,6 +46,11 @@ export default async function (req: VercelRequest, res: VercelResponse) {
           console.log(`Found existing session ${sessionId} for Telegram chat ID ${telegramChatIdFromMessage}`);
         } else {
           console.warn(`No existing session found for Telegram chat ID ${telegramChatIdFromMessage}. Using default session.`);
+          console.log('Available chat sessions (for debugging):');
+          const allSessionsSnapshot = await chatSessionsRef.get();
+          allSessionsSnapshot.forEach(doc => {
+            console.log(`  Session ID: ${doc.id}, Data: ${JSON.stringify(doc.data())}`);
+          });
         }
       }
       console.log(`Using sessionId: ${sessionId} for Telegram reply.`);
@@ -59,6 +66,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         if (telegramChatIdFromMessage) {
           chatMessageData.telegramChatId = String(telegramChatIdFromMessage);
         }
+        console.log('Saving chat message data to Firebase:', chatMessageData);
 
         await db.collection('chatMessages').add(chatMessageData);
         console.log('Telegram reply saved to Firebase.');
