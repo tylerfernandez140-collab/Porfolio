@@ -98,6 +98,7 @@ class TelegramServiceModule {
       const messageText = message.text;
       
       console.log(`Received Telegram message from ${senderId}: ${messageText}`);
+export default TelegramServiceModule;
       
       // The serverless function will now handle storing the reply in Firebase.
       // This client-side handleWebhook is primarily for local testing or
