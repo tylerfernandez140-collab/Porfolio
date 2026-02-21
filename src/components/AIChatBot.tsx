@@ -178,7 +178,7 @@ const AIChatBot = () => {
     }, 60 * 1000);
 
     return () => clearTimeout(timer);
-  }, [humanModeStarted, lastSenderType, aiTakeoverStarted]);
+  }, [humanModeStarted, lastSenderType]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
